@@ -1,0 +1,28 @@
+"""Repository interfaces — the domain depends on these, not on SQLite (DIP)."""
+
+from __future__ import annotations
+
+from typing import Protocol
+
+from grant_copilot.domain.models import (
+    Grant,
+    OrgProfile,
+    PipelineItem,
+    PipelineStatus,
+)
+
+
+class PipelineRepository(Protocol):
+    def save(self, user_id: str, grant: Grant) -> None: ...
+    def list(self, user_id: str) -> list[PipelineItem]: ...
+    def set_status(
+        self, user_id: str, grant_id: str, status: PipelineStatus
+    ) -> None: ...
+    def remove(self, user_id: str, grant_id: str) -> None: ...
+    def due_soon(self, within_days: int) -> list[tuple[str, PipelineItem]]: ...
+    def mark_reminded(self, user_id: str, grant_id: str) -> None: ...
+
+
+class ProfileRepository(Protocol):
+    def get(self, user_id: str) -> OrgProfile | None: ...
+    def save(self, user_id: str, profile: OrgProfile) -> None: ...

@@ -1,0 +1,22 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+.claude/
+.claude
+
+# Virtual environments
+.venv
+
+# Local secrets
+.env
+
+# Local database
+*.db
+
+PLAN.md
+HANDOFF_PHASE6.md
