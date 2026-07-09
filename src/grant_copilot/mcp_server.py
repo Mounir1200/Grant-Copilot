@@ -45,7 +45,7 @@ def search_grants(
 
 @mcp.tool()
 def get_grant(opportunity_id: str) -> dict:
-    """Fetch full detail for one grant: title, agency, description, response date.
+    """Fetch full detail for one grant: title, agency, and description.
 
     Use this to ground a tailored application draft in the opportunity's own text.
     """

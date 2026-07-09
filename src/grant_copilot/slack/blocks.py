@@ -8,6 +8,9 @@ from datetime import date
 from grant_copilot.slack.format import deadline, mrkdwn_escape, mrkdwn_link
 
 _MAX_CARDS = 5
+# Only the fields Grant.from_dict reads. Keeping the button value minimal holds
+# it under Slack's 2000-char limit and shrinks the round-tripped payload.
+_SAVE_FIELDS = ("id", "title", "agency", "close_date", "url")
 
 
 def grant_results(message: str, grants: list[dict]) -> list[dict]:
@@ -40,7 +43,7 @@ def _card(grant: dict) -> list[dict]:
                 "type": "button",
                 "text": {"type": "plain_text", "text": "Save"},
                 "action_id": "save_grant",
-                "value": json.dumps(grant),
+                "value": _save_value(grant),
             },
         },
         _meta(f"{mrkdwn_escape(grant['agency'])} · {deadline(close)}"),
@@ -48,6 +51,10 @@ def _card(grant: dict) -> list[dict]:
     if grant.get("reason"):
         blocks.append(_meta(mrkdwn_escape(grant["reason"])))
     return blocks
+
+
+def _save_value(grant: dict) -> str:
+    return json.dumps({field: grant[field] for field in _SAVE_FIELDS})
 
 
 def _section(text: str) -> dict:

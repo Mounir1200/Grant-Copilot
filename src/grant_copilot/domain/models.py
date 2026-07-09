@@ -17,17 +17,12 @@ class Grant:
     close_date: date | None
     url: str
 
-    @property
-    def is_open(self) -> bool:
-        return self.close_date is None or self.close_date >= date.today()
-
     def to_dict(self) -> dict:
         return {
             "id": self.id,
             "title": self.title,
             "agency": self.agency,
             "close_date": self.close_date.isoformat() if self.close_date else None,
-            "is_open": self.is_open,
             "url": self.url,
         }
 

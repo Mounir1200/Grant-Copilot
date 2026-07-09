@@ -39,7 +39,6 @@ def to_grant_detail(data: dict) -> dict:
         "title": html.unescape(data.get("opportunityTitle", "")).strip(),
         "agency": data.get("owningAgencyCode") or synopsis.get("agencyName", ""),
         "description": _strip_html(synopsis.get("synopsisDesc", "")),
-        "response_date": synopsis.get("responseDate"),
     }
 
 
