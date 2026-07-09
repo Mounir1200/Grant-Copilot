@@ -11,6 +11,8 @@ from grant_copilot.agent.orchestrator import GrantAgent
 from grant_copilot.domain.repositories import ProfileRepository
 from grant_copilot.slack.blocks import grant_results
 
+_MAX_MESSAGE_CHARS = 2000
+
 _SUGGESTED_PROMPTS = [
     {
         "title": "Find education grants",
@@ -47,7 +49,8 @@ def _make_reply(agent: GrantAgent, profile: ProfileRepository):
         try:
             set_status("Searching grants…")
             org = profile.get(context.user_id)
-            result = asyncio.run(agent.find(payload["text"], org))
+            request = (payload.get("text") or "")[:_MAX_MESSAGE_CHARS]
+            result = asyncio.run(agent.find(request, org))
             say(
                 text=result.message or "Here are some grants.",
                 blocks=grant_results(result.message, result.grants),

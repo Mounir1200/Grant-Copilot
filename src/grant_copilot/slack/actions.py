@@ -12,6 +12,7 @@ from slack_sdk import WebClient
 from grant_copilot.agent.drafter import Drafter
 from grant_copilot.domain.models import Grant, OrgProfile, PipelineStatus
 from grant_copilot.domain.repositories import PipelineRepository, ProfileRepository
+from grant_copilot.grants.taxonomy import APPLICANT_CODES, FOCUS_CODES
 from grant_copilot.slack.format import mrkdwn_escape
 from grant_copilot.slack.home import (
     draft_modal,
@@ -108,9 +109,14 @@ def _save_profile_handler(pipeline: PipelineRepository, profile: ProfileReposito
         applicant = (values["applicant"]["value"].get("selected_option") or {}).get(
             "value", ""
         )
+        # Re-validate against the taxonomy: Slack only offers valid options, but
+        # never trust the payload — drop anything outside the known code sets.
+        if applicant not in APPLICANT_CODES:
+            applicant = ""
         focus = tuple(
             option["value"]
             for option in values["focus"]["value"].get("selected_options", [])
+            if option["value"] in FOCUS_CODES
         )
         mission = values["mission"]["value"]["value"] or ""
         profile.save(

@@ -35,6 +35,10 @@ FOCUS_AREAS: list[tuple[str, str]] = [
 _APPLICANT_LABELS = dict(APPLICANT_TYPES)
 _FOCUS_LABELS = dict(FOCUS_AREAS)
 
+# Valid code sets, for defense-in-depth validation of submitted profile values.
+APPLICANT_CODES = frozenset(_APPLICANT_LABELS)
+FOCUS_CODES = frozenset(_FOCUS_LABELS)
+
 
 def applicant_label(code: str) -> str:
     return _APPLICANT_LABELS.get(code, code)
