@@ -22,38 +22,47 @@ Slack is already where many nonprofit teams coordinate programs and deadlines. G
 ## How it works
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#0d1117", "primaryColor": "#21262d", "primaryTextColor": "#f0f6fc", "primaryBorderColor": "#58a6ff", "lineColor": "#8b949e", "secondaryColor": "#161b22", "tertiaryColor": "#161b22", "clusterBkg": "#161b22", "clusterBorder": "#30363d", "fontFamily": "Arial"}}}%%
 flowchart LR
     subgraph Slack["Slack workspace"]
-        Assistant["Assistant pane"]
-        Home["App Home pipeline"]
-        DMs["Deadline DMs"]
+        direction TB
+        Assistant["Assistant / Chat"]
+        Home["App Home<br/>grant pipeline"]
+        DMs["Deadline reminders<br/>(direct messages)"]
     end
 
-    Bolt["Slack Bolt app"]
-    Agent["GrantAgent orchestrator"]
-    Drafter["Guardrailed draft writer"]
-    Mistral["Mistral Small"]
-    MCPClient["MCP client over stdio"]
-    MCPServer["Custom FastMCP server"]
-    GrantsGov["Grants.gov Search2 + fetchOpportunity"]
-    SQLite[("SQLite profile + pipeline")]
-    Scheduler["APScheduler reminder job"]
+    subgraph Worker["Grant Copilot worker · Render"]
+        direction TB
+        Bolt["Slack Bolt app"]
+        Workflow["GrantAgent + draft writer<br/>cited search & guarded drafts"]
+        SQLite[("SQLite<br/>profiles & pipeline")]
+        Scheduler["APScheduler<br/>deadline checks"]
+    end
+
+    subgraph Services["AI & federal data"]
+        direction TB
+        Mistral["Mistral Small"]
+        MCP["MCP boundary<br/>client over stdio → Custom FastMCP server"]
+        GrantsGov["Grants.gov API<br/>Search2 + fetchOpportunity"]
+    end
 
     Assistant --> Bolt
-    Bolt --> Agent
-    Agent <--> Mistral
-    Agent -->|"search_grants / get_grant"| MCPClient
-    Bolt --> Drafter
-    Drafter <--> Mistral
-    Drafter -->|"get_grant"| MCPClient
-    MCPClient --> MCPServer
-    MCPServer --> GrantsGov
-
     Home <--> Bolt
+    Bolt --> Workflow
+    Workflow <--> Mistral
+    Workflow -->|"search_grants / get_grant"| MCP
+    MCP -->|"live opportunity data"| GrantsGov
     Bolt <--> SQLite
     Bolt --> Scheduler
     Scheduler --> SQLite
-    Scheduler --> DMs
+    Scheduler -->|"deadline reminders"| DMs
+
+    classDef slack fill:#1f6feb,stroke:#58a6ff,color:#ffffff;
+    classDef worker fill:#21262d,stroke:#8b949e,color:#f0f6fc;
+    classDef service fill:#0d419d,stroke:#58a6ff,color:#ffffff;
+    class Assistant,Home,DMs slack;
+    class Bolt,Workflow,SQLite,Scheduler worker;
+    class Mistral,MCP,GrantsGov service;
 ```
 
 Three design decisions improve reliability:
