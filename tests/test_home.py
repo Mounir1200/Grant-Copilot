@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 
 from grant_copilot.domain.models import Grant, OrgProfile, PipelineItem, PipelineStatus
-from grant_copilot.slack.home import home_view
+from grant_copilot.slack.home import draft_modal, home_view
 
 
 def _item(index: int, status: PipelineStatus, days: int | None = None) -> PipelineItem:
@@ -53,3 +53,34 @@ def test_home_discloses_source_ai_processing_and_data_deletion() -> None:
     assert "This product uses the Grants.gov API" in rendered
     assert "Search and draft context is sent to Mistral AI" in rendered
     assert "delete_user_data" in rendered
+
+
+def test_draft_modal_promotes_each_needs_input_marker() -> None:
+    summary = (
+        "The organization will refine its project plan. "
+        "[NEEDS INPUT: target population and geographic scope.] "
+        "The final plan should be reviewed. "
+        "[NEEDS INPUT: measurable outcomes.]"
+    )
+
+    view = draft_modal("Community Health", summary)
+
+    assert len(view["blocks"]) == 7
+    alert = view["blocks"][2]
+    assert alert["type"] == "alert"
+    assert alert["level"] == "warning"
+    assert "2 NEEDS INPUT fields" in alert["text"]["text"]
+    requirements = view["blocks"][3]["text"]["text"]
+    assert "target population and geographic scope." in requirements
+    assert "measurable outcomes." in requirements
+    rendered_summary = view["blocks"][5]["text"]["text"]
+    assert "*[NEEDS INPUT: target population and geographic scope.]*" in rendered_summary
+    assert "*[NEEDS INPUT: measurable outcomes.]*" in rendered_summary
+
+
+def test_draft_modal_escapes_attention_block_and_omits_it_without_markers() -> None:
+    marked = draft_modal("Title", "[NEEDS INPUT: <verified> & approved information]")
+    assert "&lt;verified&gt; &amp; approved information" in marked["blocks"][3]["text"]["text"]
+
+    unmarked = draft_modal("Title", "A cautious draft with no missing data markers.")
+    assert len(unmarked["blocks"]) == 4
