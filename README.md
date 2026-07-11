@@ -142,16 +142,3 @@ uv run python scripts/spike_grants_gov.py "clean water"  # Public API, no key
 uv run python scripts/spike_mcp_client.py                 # MCP round trip
 uv run python scripts/spike_mistral_tools.py              # Requires MISTRAL_API_KEY
 ```
-
-## Deployment and judge checklist
-
-- [ ] Run `uv run pytest` and all applicable smoke tests.
-- [ ] Deploy one always-on application instance with a persistent SQLite path.
-- [ ] Confirm Slack Socket Mode reconnects and Mistral quota is sufficient for judging.
-- [ ] Exercise the full path as a fresh member: profile, search, save, pipeline move, reminder, and draft.
-- [ ] Keep test data fictional and free of confidential information.
-- [ ] Install the working app in the submitted Slack developer sandbox.
-- [ ] Invite `slackhack@salesforce.com` and `testing@devpost.com` as **Members**, not Guests, and verify access.
-- [ ] Include the sandbox URL, English project description, impact statement, and exported architecture diagram in Devpost.
-- [ ] Publish a public demo video under three minutes and verify it in a signed-out browser.
-- [ ] Keep the deployed app available throughout the judging period.
