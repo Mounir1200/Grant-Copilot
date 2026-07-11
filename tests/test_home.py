@@ -65,22 +65,17 @@ def test_draft_modal_promotes_each_needs_input_marker() -> None:
 
     view = draft_modal("Community Health", summary)
 
-    assert len(view["blocks"]) == 7
-    alert = view["blocks"][2]
-    assert alert["type"] == "alert"
-    assert alert["level"] == "warning"
-    assert "2 NEEDS INPUT fields" in alert["text"]["text"]
-    requirements = view["blocks"][3]["text"]["text"]
-    assert "target population and geographic scope." in requirements
-    assert "measurable outcomes." in requirements
-    rendered_summary = view["blocks"][5]["text"]["text"]
-    assert "*[NEEDS INPUT: target population and geographic scope.]*" in rendered_summary
-    assert "*[NEEDS INPUT: measurable outcomes.]*" in rendered_summary
+    assert len(view["blocks"]) == 4
+    rendered_summary = view["blocks"][2]["text"]["text"]
+    assert "\n\n:warning: *[NEEDS INPUT: target population and geographic scope.]*" in (
+        rendered_summary
+    )
+    assert "\n\n:warning: *[NEEDS INPUT: measurable outcomes.]*" in rendered_summary
 
 
-def test_draft_modal_escapes_attention_block_and_omits_it_without_markers() -> None:
+def test_draft_modal_escapes_markers_and_keeps_plain_drafts_compact() -> None:
     marked = draft_modal("Title", "[NEEDS INPUT: <verified> & approved information]")
-    assert "&lt;verified&gt; &amp; approved information" in marked["blocks"][3]["text"]["text"]
+    assert "&lt;verified&gt; &amp; approved information" in marked["blocks"][2]["text"]["text"]
 
     unmarked = draft_modal("Title", "A cautious draft with no missing data markers.")
     assert len(unmarked["blocks"]) == 4

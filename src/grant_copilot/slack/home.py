@@ -28,8 +28,6 @@ _NEXT_STEP = {
 
 _MAX_ITEMS_PER_COLUMN = 8
 _NEEDS_INPUT_PATTERN = re.compile(r"\[NEEDS INPUT:\s*([^\]]+)\]", re.IGNORECASE)
-_MAX_NEEDS_INPUT_ITEMS = 3
-_MAX_NEEDS_INPUT_ITEM_CHARS = 240
 _GRANTS_GOV_NOTICE = (
     "This product uses the Grants.gov API but is not endorsed or certified by the "
     "U.S. Department of Health and Human Services."
@@ -159,26 +157,11 @@ def drafting_modal(title: str) -> dict:
 
 
 def draft_modal(title: str, summary: str) -> dict:
-    input_blocks = _needs_input_blocks(summary)
-    if input_blocks:
-        return _summary_modal(
-            [
-                _section(f"*{mrkdwn_escape(title)}*"),
-                {"type": "divider"},
-                *input_blocks,
-                {"type": "divider"},
-                _section(_format_draft_summary(summary)),
-                _note(
-                    "AI-generated starter - verify every claim against the official NOFO "
-                    "and replace every [NEEDS INPUT] before use."
-                ),
-            ]
-        )
     return _summary_modal(
         [
             _section(f"*{mrkdwn_escape(title)}*"),
             {"type": "divider"},
-            _section(mrkdwn_escape(summary)),
+            _section(_format_draft_summary(summary)),
             _note(
                 "AI-generated starter — verify every claim against the official NOFO "
                 "and replace every [NEEDS INPUT] before use."
@@ -187,59 +170,25 @@ def draft_modal(title: str, summary: str) -> dict:
     )
 
 
-def _needs_input_blocks(summary: str) -> list[dict]:
-    """Make required human input visible before the generated draft body."""
-    requirements = _needs_input_requirements(summary)
-    if not requirements:
-        return []
-    count = len(requirements)
-    noun = "field" if count == 1 else "fields"
-    bullets = "\n".join(f"- {mrkdwn_escape(detail)}" for detail in requirements)
-    return [
-        {
-            "type": "alert",
-            "level": "warning",
-            "text": {
-                "type": "mrkdwn",
-                "text": (
-                    f":warning: *{count} NEEDS INPUT {noun}* - "
-                    "complete or verify these details before use."
-                ),
-            },
-        },
-        _section(f"*Required human input*\n{bullets}"),
-    ]
-
-
-def _needs_input_requirements(summary: str) -> list[str]:
-    """Extract a short, de-duplicated set of explicit human-input requirements."""
-    requirements: list[str] = []
-    for match in _NEEDS_INPUT_PATTERN.finditer(summary):
-        detail = " ".join(match.group(1).split())
-        if not detail or detail in requirements:
-            continue
-        requirements.append(_truncate_needs_input(detail))
-        if len(requirements) == _MAX_NEEDS_INPUT_ITEMS:
-            break
-    return requirements
-
-
-def _truncate_needs_input(detail: str) -> str:
-    if len(detail) <= _MAX_NEEDS_INPUT_ITEM_CHARS:
-        return detail
-    return f"{detail[: _MAX_NEEDS_INPUT_ITEM_CHARS - 3].rstrip()}..."
-
-
 def _format_draft_summary(summary: str) -> str:
-    """Escape the draft while making each explicit input marker bold."""
+    """Escape the draft while promoting each explicit input marker to its own line."""
     parts: list[str] = []
     cursor = 0
     for match in _NEEDS_INPUT_PATTERN.finditer(summary):
-        parts.append(mrkdwn_escape(summary[cursor : match.start()]))
-        parts.append(f"*{mrkdwn_escape(match.group(0))}*")
+        parts.append(mrkdwn_escape(summary[cursor : match.start()].rstrip()))
         cursor = match.end()
+        punctuation = ""
+        if cursor < len(summary) and summary[cursor] in ",;:.":
+            punctuation = summary[cursor]
+            cursor += 1
+        parts.append(
+            f"\n\n:warning: *{mrkdwn_escape(match.group(0))}*"
+            f"{mrkdwn_escape(punctuation)}\n"
+        )
+        while cursor < len(summary) and summary[cursor].isspace():
+            cursor += 1
     parts.append(mrkdwn_escape(summary[cursor:]))
-    return "".join(parts)
+    return "".join(parts).strip()
 
 
 def _mission_block(profile: OrgProfile | None) -> dict:
