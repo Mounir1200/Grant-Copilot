@@ -33,7 +33,7 @@ flowchart LR
 
     subgraph Worker["Grant Copilot worker · Render"]
         direction TB
-        Bolt["Slack Bolt app"]
+        Bolt["Slack Bolt app<br/>Socket Mode"]
         Workflow["GrantAgent + draft writer<br/>cited search & guarded drafts"]
         SQLite[("SQLite<br/>profiles & pipeline")]
         Scheduler["APScheduler<br/>deadline checks"]
@@ -54,7 +54,7 @@ flowchart LR
     MCP -->|"live opportunity data"| GrantsGov
     Bolt <--> SQLite
     Bolt --> Scheduler
-    Scheduler --> SQLite
+    Scheduler <--> SQLite
     Scheduler -->|"deadline reminders"| DMs
 
     classDef slack fill:#1f6feb,stroke:#58a6ff,color:#ffffff;
