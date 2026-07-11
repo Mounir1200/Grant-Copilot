@@ -97,3 +97,20 @@ def test_profile_round_trips_and_upserts(db_path: str) -> None:
     updated = OrgProfile(mission="New mission", applicant_type="", focus_areas=())
     repo.save(_USER, updated)
     assert repo.get(_USER) == updated
+
+
+def test_delete_all_removes_only_one_users_stored_data(db_path: str) -> None:
+    pipeline = SqlitePipelineRepository(db_path)
+    profiles = SqliteProfileRepository(db_path)
+    pipeline.save(_USER, _grant("mine"))
+    pipeline.save(_OTHER, _grant("theirs"))
+    profiles.save(_USER, OrgProfile(mission="Mine"))
+    profiles.save(_OTHER, OrgProfile(mission="Theirs"))
+
+    pipeline.delete_all(_USER)
+    profiles.delete(_USER)
+
+    assert pipeline.list(_USER) == []
+    assert profiles.get(_USER) is None
+    assert len(pipeline.list(_OTHER)) == 1
+    assert profiles.get(_OTHER) == OrgProfile(mission="Theirs")

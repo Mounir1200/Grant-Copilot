@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import date
 
 from grant_copilot.domain.models import OrgProfile, PipelineItem, PipelineStatus
 from grant_copilot.grants.taxonomy import (
@@ -24,6 +25,12 @@ _NEXT_STEP = {
     PipelineStatus.IN_PROGRESS: (PipelineStatus.SUBMITTED, "Mark submitted"),
 }
 
+_MAX_ITEMS_PER_COLUMN = 8
+_GRANTS_GOV_NOTICE = (
+    "This product uses the Grants.gov API but is not endorsed or certified by the "
+    "U.S. Department of Health and Human Services."
+)
+
 
 def home_view(items: list[PipelineItem], profile: OrgProfile | None) -> dict:
     blocks: list[dict] = [
@@ -36,24 +43,35 @@ def home_view(items: list[PipelineItem], profile: OrgProfile | None) -> dict:
     if not items:
         blocks.append(
             _note(
-                "No grants saved yet. Ask Grant Copilot in the Chat tab, then Save the ones that fit."
+                "No grants saved yet. Ask Grant Copilot in the Chat tab, then "
+                "Save the ones that fit."
             )
         )
-        return {"type": "home", "blocks": blocks}
-
-    for status, label in _COLUMNS:
-        group = [item for item in items if item.status is status]
-        blocks.append(
-            {
-                "type": "header",
-                "text": {"type": "plain_text", "text": f"{label} ({len(group)})"},
-            }
-        )
-        if not group:
-            blocks.append(_note("Nothing here yet."))
-            continue
-        for item in group:
-            blocks.extend(_item_blocks(item))
+    else:
+        for status, label in _COLUMNS:
+            group = sorted(
+                (item for item in items if item.status is status),
+                key=_pipeline_sort_key,
+            )
+            blocks.append(
+                {
+                    "type": "header",
+                    "text": {"type": "plain_text", "text": f"{label} ({len(group)})"},
+                }
+            )
+            if not group:
+                blocks.append(_note("Nothing here yet."))
+                continue
+            for item in group[:_MAX_ITEMS_PER_COLUMN]:
+                blocks.extend(_item_blocks(item))
+            if len(group) > _MAX_ITEMS_PER_COLUMN:
+                blocks.append(
+                    _note(
+                        f"Showing the {_MAX_ITEMS_PER_COLUMN} nearest deadlines "
+                        f"of {len(group)} grants in this stage."
+                    )
+                )
+    blocks.extend(_trust_blocks())
     return {"type": "home", "blocks": blocks}
 
 
@@ -128,7 +146,9 @@ def drafting_modal(title: str) -> dict:
         [
             _section(f"*{mrkdwn_escape(title)}*"),
             {"type": "divider"},
-            _section("Writing a project summary tailored to your mission…"),
+            _section(
+                "Creating a cautious draft starter from your mission and the official synopsis…"
+            ),
             _note("This usually takes a few seconds."),
         ]
     )
@@ -140,7 +160,10 @@ def draft_modal(title: str, summary: str) -> dict:
             _section(f"*{mrkdwn_escape(title)}*"),
             {"type": "divider"},
             _section(mrkdwn_escape(summary)),
-            _note("Draft by Grant Copilot — review before submitting."),
+            _note(
+                "AI-generated starter — verify every claim against the official NOFO "
+                "and replace every [NEEDS INPUT] before use."
+            ),
         ]
     )
 
@@ -174,7 +197,52 @@ def _profile_context(profile: OrgProfile) -> dict:
         if profile.focus_areas
         else "Any focus"
     )
-    return _note(mrkdwn_escape(f"Eligible as: {applicant} · Focus: {focus}"))
+    return _note(
+        mrkdwn_escape(
+            f"Profile pre-screen: applicant type {applicant} · Focus: {focus}"
+        )
+    )
+
+
+def _pipeline_sort_key(item: PipelineItem) -> tuple:
+    """Put actionable deadlines first, then the most recently saved open-ended items."""
+    return (
+        item.grant.close_date is None,
+        item.grant.close_date or date.max,
+        -item.saved_at.timestamp(),
+    )
+
+
+def _trust_blocks() -> list[dict]:
+    return [
+        {"type": "divider"},
+        _section(
+            "*Data source & privacy*\n"
+            f"{_GRANTS_GOV_NOTICE} Search and draft context is sent to Mistral AI. "
+            "Always verify the official Notice of Funding Opportunity before applying."
+        ),
+        {
+            "type": "actions",
+            "elements": [
+                {
+                    **_button("Delete stored app data", "delete_user_data", "delete"),
+                    "style": "danger",
+                    "confirm": {
+                        "title": {"type": "plain_text", "text": "Delete app data?"},
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": (
+                                "This permanently deletes your profile and saved "
+                                "grant pipeline."
+                            ),
+                        },
+                        "confirm": {"type": "plain_text", "text": "Delete"},
+                        "deny": {"type": "plain_text", "text": "Cancel"},
+                    },
+                }
+            ],
+        },
+    ]
 
 
 def _item_blocks(item: PipelineItem) -> list[dict]:
@@ -206,7 +274,7 @@ def _item_actions(item: PipelineItem) -> list[dict]:
         )
     if item.status is not PipelineStatus.SUBMITTED:
         draft_value = json.dumps({"grant_id": item.grant.id, "title": item.grant.title})
-        elements.append(_button("Draft summary", "draft_summary", draft_value))
+        elements.append(_button("Draft starter", "draft_summary", draft_value))
     elements.append(_button("Remove", "remove_grant", item.grant.id))
     return elements
 
@@ -227,7 +295,7 @@ def _option(label: str, value: str) -> dict:
 def _summary_modal(blocks: list[dict]) -> dict:
     return {
         "type": "modal",
-        "title": {"type": "plain_text", "text": "Project summary"},
+        "title": {"type": "plain_text", "text": "Draft starter"},
         "close": {"type": "plain_text", "text": "Close"},
         "blocks": blocks,
     }

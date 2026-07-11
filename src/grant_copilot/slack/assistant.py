@@ -15,12 +15,12 @@ _MAX_MESSAGE_CHARS = 2000
 
 _SUGGESTED_PROMPTS = [
     {
-        "title": "Find education grants",
-        "message": "Find grants for youth education programs.",
+        "title": "Youth conservation",
+        "message": "Find currently open grants for youth conservation programs.",
     },
     {
-        "title": "Climate funding",
-        "message": "Show climate resilience funding for nonprofits.",
+        "title": "Rural community health",
+        "message": "Find currently open federal grants for rural community health programs.",
     },
 ]
 
@@ -34,7 +34,11 @@ def register(app: App, agent: GrantAgent, profile: ProfileRepository) -> None:
 
 
 def _greet(say: Say, set_suggested_prompts: SetSuggestedPrompts) -> None:
-    say("Describe your nonprofit's mission and I'll find grants that fit.")
+    say(
+        "Describe your nonprofit's mission and I'll find profile-matched federal "
+        "opportunities. Set your applicant type and focus areas once in the Home tab "
+        "for a more precise pre-screen."
+    )
     set_suggested_prompts(prompts=_SUGGESTED_PROMPTS)
 
 
@@ -47,12 +51,20 @@ def _make_reply(agent: GrantAgent, profile: ProfileRepository):
         logger: Logger,
     ) -> None:
         try:
-            set_status("Searching grants…")
+            request = (payload.get("text") or "").strip()[:_MAX_MESSAGE_CHARS]
+            if not request:
+                say("Tell me what your organization does or what kind of funding you need.")
+                return
+            set_status("Searching Grants.gov and checking source evidence…")
             org = profile.get(context.user_id)
-            request = (payload.get("text") or "")[:_MAX_MESSAGE_CHARS]
             result = asyncio.run(agent.find(request, org))
+            fallback_text = (
+                "Here are the source-cited potential matches."
+                if result.grants
+                else "No currently actionable grants matched."
+            )
             say(
-                text=result.message or "Here are some grants.",
+                text=result.message or fallback_text,
                 blocks=grant_results(result.message, result.grants),
             )
         except Exception as error:

@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/slackapi/manifest-schema/main/manifest.schema.json",
   "display_information": {
     "name": "Grant Copilot",
-    "description": "Find, track, and apply to grants — right inside Slack.",
+    "description": "Find profile-matched grants, track deadlines, and prepare drafts in Slack.",
     "background_color": "#1a1d29"
   },
   "features": {
@@ -16,7 +16,7 @@
       "always_online": true
     },
     "assistant_view": {
-      "assistant_description": "I help nonprofits discover relevant grants, track deadlines, and draft applications.",
+      "assistant_description": "I help nonprofits pre-screen federal grants, track deadlines, and prepare draft starters.",
       "suggested_prompts": []
     }
   },

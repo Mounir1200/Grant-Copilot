@@ -57,6 +57,10 @@ class SqlitePipelineRepository:
                 (user_id, grant_id),
             )
 
+    def delete_all(self, user_id: str) -> None:
+        with session(self._path) as connection:
+            connection.execute("DELETE FROM pipeline WHERE user_id = ?", (user_id,))
+
     def due_soon(self, within_days: int) -> list[tuple[str, PipelineItem]]:
         with session(self._path) as connection:
             rows = connection.execute(
@@ -112,6 +116,10 @@ class SqliteProfileRepository:
                     ",".join(profile.focus_areas),
                 ),
             )
+
+    def delete(self, user_id: str) -> None:
+        with session(self._path) as connection:
+            connection.execute("DELETE FROM mission WHERE user_id = ?", (user_id,))
 
 
 def _row_to_item(row) -> PipelineItem:

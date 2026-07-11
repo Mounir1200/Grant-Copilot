@@ -1,7 +1,7 @@
 [project]
 name = "grant-copilot"
 version = "0.1.0"
-description = "A Slack agent that helps nonprofits find, track, and apply to grants."
+description = "A Slack agent that helps nonprofits pre-screen grants, track deadlines, and prepare draft starters."
 readme = "README.md"
 authors = [
     { name = "Normiu", email = "115707908+Mounir1200@users.noreply.github.com" }

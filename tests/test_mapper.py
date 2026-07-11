@@ -19,13 +19,17 @@ def test_to_grant_unescapes_and_parses() -> None:
             "id": 123,
             "title": "Youth STEM &amp; Arts",
             "agencyCode": "ED",
+            "openDate": "01/15/2027",
             "closeDate": "03/02/2027",
+            "oppStatus": "POSTED",
         }
     )
     assert grant.id == "123"
     assert grant.title == "Youth STEM & Arts"
     assert grant.agency == "ED"
     assert grant.close_date == date(2027, 3, 2)
+    assert grant.open_date == date(2027, 1, 15)
+    assert grant.status == "posted"
     assert grant.url == _DETAIL_URL.format(id="123")
 
 
@@ -45,9 +49,20 @@ def test_to_grant_detail_extracts_only_draftable_fields() -> None:
         {
             "id": 42,
             "opportunityTitle": "Clean Water &amp; Land",
+            "ost": "POSTED",
             "synopsis": {
                 "agencyName": "EPA",
                 "synopsisDesc": "<p>Fund rivers.</p>",
+                "postingDateStr": "2027-01-15-00-00-00",
+                "responseDate": "Mar 2, 2027 12:00:00 AM EST",
+                "responseDateDesc": "Applications close at 5 p.m. ET.",
+                "applicantTypes": [
+                    {"id": "12", "description": "Nonprofit organizations"}
+                ],
+                "fundingActivityCategories": [
+                    {"id": "ENV", "description": "Environment"}
+                ],
+                "applicantEligibilityDesc": "<p>Registered nonprofits only.</p>",
             },
         }
     )
@@ -56,6 +71,13 @@ def test_to_grant_detail_extracts_only_draftable_fields() -> None:
         "title": "Clean Water & Land",
         "agency": "EPA",
         "description": "Fund rivers.",
+        "eligibility": ["Nonprofit organizations"],
+        "eligibility_notes": "Registered nonprofits only.",
+        "funding_categories": ["Environment"],
+        "status": "posted",
+        "open_date": "2027-01-15",
+        "close_date": "2027-03-02",
+        "deadline_notes": "Applications close at 5 p.m. ET.",
     }
     # The now-removed field must not creep back into the payload.
     assert "response_date" not in detail

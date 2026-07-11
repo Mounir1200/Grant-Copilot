@@ -30,6 +30,7 @@ def register(
     app.action("save_grant")(_save_handler(pipeline))
     app.action("advance_status")(_advance_handler(pipeline, profile))
     app.action("remove_grant")(_remove_handler(pipeline, profile))
+    app.action("delete_user_data")(_delete_user_data_handler(pipeline, profile))
     app.action("draft_summary")(_draft_handler(drafter, profile))
     app.action("open_profile")(_open_profile_handler(profile))
     app.view("profile_modal")(_save_profile_handler(pipeline, profile))
@@ -84,6 +85,19 @@ def _remove_handler(pipeline: PipelineRepository, profile: ProfileRepository):
         ack()
         user_id = body["user"]["id"]
         pipeline.remove(user_id, body["actions"][0]["value"])
+        _publish_home(client, user_id, pipeline, profile)
+
+    return handler
+
+
+def _delete_user_data_handler(
+    pipeline: PipelineRepository, profile: ProfileRepository
+):
+    def handler(ack: Ack, body: dict, client: WebClient) -> None:
+        ack()
+        user_id = body["user"]["id"]
+        pipeline.delete_all(user_id)
+        profile.delete(user_id)
         _publish_home(client, user_id, pipeline, profile)
 
     return handler

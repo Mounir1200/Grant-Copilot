@@ -1,4 +1,4 @@
-"""grants.gov facet codes for eligibility-aware search (applicant + category)."""
+"""Grants.gov facet codes for profile-based pre-screening (applicant + category)."""
 
 from __future__ import annotations
 

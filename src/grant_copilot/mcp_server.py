@@ -26,28 +26,43 @@ def search_grants(
     eligibilities: list[str] | None = None,
     limit: int = 10,
 ) -> dict:
-    """Search open U.S. federal funding opportunities by keyword and facets.
+    """Search currently posted U.S. federal opportunities by keyword and facets.
 
-    funding_categories and eligibilities are grants.gov codes; passing them
-    restricts results to grants the applicant actually qualifies for.
+    funding_categories and eligibilities are grants.gov codes used for a
+    high-level profile pre-screen. Eligibility must still be verified in the
+    official Notice of Funding Opportunity (NOFO).
     """
     term = str(keyword or "").strip()
     if not term:
         return {"grants": []}
+    bounded_limit = _bounded_limit(limit)
+    query_limit = min(_MAX_SEARCH_LIMIT, bounded_limit * 2)
     records = _grants.search(
         term,
-        rows=_bounded_limit(limit),
+        rows=query_limit,
         eligibilities=_pipe(eligibilities),
         funding_categories=_pipe(funding_categories),
     )
-    return {"grants": [to_grant(record).to_dict() for record in records]}
+    grants = []
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        try:
+            grant = to_grant(record)
+        except (KeyError, TypeError, ValueError):
+            continue
+        # Search2 can occasionally surface stale records even when filtered to
+        # "posted". Status and dates are therefore enforced again locally.
+        if grant.is_actionable():
+            grants.append(grant.to_dict())
+    return {"grants": grants[:bounded_limit]}
 
 
 @mcp.tool()
 def get_grant(opportunity_id: str) -> dict:
-    """Fetch full detail for one grant: title, agency, and description.
+    """Fetch factual detail for one grant, including eligibility and dates.
 
-    Use this to ground a tailored application draft in the opportunity's own text.
+    Use this to ground a cautious draft starter in the opportunity's own text.
     """
     return to_grant_detail(_grants.fetch(opportunity_id))
 

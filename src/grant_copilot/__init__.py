@@ -1,1 +1,1 @@
-"""Grant Copilot — a Slack agent that finds, tracks, and helps apply to grants."""
+"""Grant Copilot — pre-screen grants, track deadlines, and prepare draft starters."""
